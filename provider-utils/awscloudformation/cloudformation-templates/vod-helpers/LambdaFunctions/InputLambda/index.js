@@ -6,7 +6,7 @@ const AWS = require("aws-sdk");
 const hlsJobSettings = require("./hls_settings.json");
 const dashJobSettings = require("./dash_settings.json");
 const hlsdashJobSettings = require("./hls_dash_settings.json");
-const hlsThumbnailJobSettings = require("./hls_thumbnail_settings.json");
+const hlsfileJobSettings = require("./hls_file_settings.json");
 const fileJobSettings = require("./file_settings.json");
 // Set the region
 
@@ -48,6 +48,7 @@ async function createJob(eventObject) {
   const outputBucketName = process.env.OUTPUT_BUCKET;
   const hlsRendition = "hls";
   const dashRendition = "dash";
+  const fileRendition = "file";
 
   // Set the output to have the filename (without extension) as a folder depending
   // on the type of rendition this is required as the job json for HLS differs from DASH
@@ -72,14 +73,21 @@ async function createJob(eventObject) {
       jobSettings = fileJobSettings;
     }
   } else {
+
+    if (outputTypeList.includes("HLS") && outputTypeList.includes("DASH")) {
+      jobSettings = hlsdashJobSettings;
+    } else if (outputTypeList.includes("HLS") && outputTypeList.includes("FILE")) {
+      jobSettings = hlsfileJobSettings;
+    }
+
     for (let counter = 0; counter < outputTypeList.length; counter++) {
       if (outputTypeList[counter] === "HLS") {
         // iterate through the outputGroups and set the appropriate output file paths
-        const outputGroupsLengths = hlsdashJobSettings.OutputGroups.length;
+        const outputGroupsLengths = jobSettings.OutputGroups.length;
 
         for (let outputGroupsLengthsCounter = 0; outputGroupsLengthsCounter < outputGroupsLengths; outputGroupsLengthsCounter++) {
-          if (hlsdashJobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.Type.includes("HLS")) {
-            hlsdashJobSettings.OutputGroups[
+          if (jobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.Type.includes("HLS")) {
+            jobSettings.OutputGroups[
               outputGroupsLengthsCounter
             ].OutputGroupSettings.HlsGroupSettings.Destination = `s3://${outputBucketName}/${FileName}/${hlsRendition}/`;
           }
@@ -88,11 +96,11 @@ async function createJob(eventObject) {
 
       if (outputTypeList[counter] === "DASH") {
         // iterate through the outputGroups and set the appropriate output file paths
-        const outputGroupsLengths = hlsdashJobSettings.OutputGroups.length;
+        const outputGroupsLengths = jobSettings.OutputGroups.length;
 
         for (let outputGroupsLengthsCounter = 0; outputGroupsLengthsCounter < outputGroupsLengths; outputGroupsLengthsCounter++) {
-          if (hlsdashJobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.Type.includes("DASH")) {
-            hlsdashJobSettings.OutputGroups[
+          if (jobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.Type.includes("DASH")) {
+            jobSettings.OutputGroups[
               outputGroupsLengthsCounter
             ].OutputGroupSettings.DashIsoGroupSettings.Destination = `s3://${outputBucketName}/${FileName}/${dashRendition}/`;
           }
@@ -100,19 +108,17 @@ async function createJob(eventObject) {
       }
 
       if (outputTypeList[counter] === "FILE") {
-        const outputGroupsLengths = hlsThumbnailJobSettings.OutputGroups.length;
+        const outputGroupsLengths = jobSettings.OutputGroups.length;
 
         for (let outputGroupsLengthsCounter = 0; outputGroupsLengthsCounter < outputGroupsLengths; outputGroupsLengthsCounter++) {
-          if (hlsThumbnailJobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.Type.includes("FILE")) {
-            hlsThumbnailJobSettings.OutputGroups[0].OutputGroupSettings.FileGroupSettings.Destination = `s3://${outputBucketName}/${FileName}/`;
+          if (jobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.Type.includes("FILE")) {
+            jobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.FileGroupSettings.Destination = `s3://${outputBucketName}/${FileName}/${fileRendition}/`;
           }
         }
       }
     }
 
-    hlsdashJobSettings.Inputs[0].FileInput = `s3://${Bucket}/${decodeURIComponent(AddedKey.replace(/\+/g, " "))}`;
-
-    jobSettings = hlsdashJobSettings;
+    jobSettings.Inputs[0].FileInput = `s3://${Bucket}/${decodeURIComponent(AddedKey.replace(/\+/g, " "))}`;
   }
 
   let queueARN = "";

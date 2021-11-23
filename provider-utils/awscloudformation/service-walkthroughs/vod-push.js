@@ -164,6 +164,8 @@ async function serviceQuestions(context, options, defaultValuesFilename, resourc
           outputRendition.push('DASH');
         } else if (currentTemplate.Settings.OutputGroups[0].OutputGroupSettings.Type.includes('HLS')) {
           outputRendition.push('HLS');
+        } else if (currentTemplate.Settings.OutputGroups[0].OutputGroupSettings.Type.includes('FILE')) {
+          outputRendition.push('FILE');
         }
       }
 
@@ -179,6 +181,8 @@ async function serviceQuestions(context, options, defaultValuesFilename, resourc
         outputRendition.push('DASH');
       } else if (currentTemplate.Settings.OutputGroups[counter].OutputGroupSettings.Type.includes('HLS')) {
         outputRendition.push('HLS');
+      } else if (currentTemplate.Settings.OutputGroups[counter].OutputGroupSettings.Type.includes('FILE')) {
+        outputRendition.push('FILE');
       }
     }
 

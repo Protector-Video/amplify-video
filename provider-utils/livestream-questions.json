@@ -148,7 +148,7 @@
     },
     "endpoints": {
         "key": "endpoints",
-        "question": "Output streaming standards. MediaPackage supports HLS, DASH, MSS, and/or CMAF: ",
+        "question": "Output streaming standards. MediaPackage supports HLS, DASH, FILE, MSS, and/or CMAF: ",
         "type": "list",
         "options": [
             {
@@ -159,6 +159,11 @@
             {
                 "name": "HLS,DASH",
                 "value": "HLS,DASH",
+                "next": "startOverWindow"
+            },
+            {
+                "name": "HLS,FILE",
+                "value": "HLS,FILE",
                 "next": "startOverWindow"
             },
             {

@@ -1,17 +1,19 @@
 // Load the AWS SDK for Node.js
 // eslint-disable-next-line import/no-extraneous-dependencies
 /* eslint-disable */
-const AWS = require('aws-sdk');
+const AWS = require("aws-sdk");
 /* eslint-enable */
-const hlsJobSettings = require('./hls_settings.json');
-const dashJobSettings = require('./dash_settings.json');
-const hlsdashJobSettings = require('./hls_dash_settings.json');
+const hlsJobSettings = require("./hls_settings.json");
+const dashJobSettings = require("./dash_settings.json");
+const hlsdashJobSettings = require("./hls_dash_settings.json");
+const hlsThumbnailJobSettings = require("./hls_thumbnail_settings.json");
+const fileJobSettings = require("./file_settings.json");
 // Set the region
 
 exports.handler = async (event) => {
   AWS.config.update({ region: event.awsRegion });
   console.log(event);
-  if (event.Records[0].eventName.includes('ObjectCreated')) {
+  if (event.Records[0].eventName.includes("ObjectCreated")) {
     await createJob(event.Records[0].s3);
     const response = {
       statusCode: 200,
@@ -37,15 +39,15 @@ async function createJob(eventObject) {
   }
 
   const queueParams = {
-    Name: 'Default', /* required */
+    Name: "Default" /* required */,
   };
   const AddedKey = eventObject.object.key;
   // Get the name of the file passed in the event without the extension
-  const FileName = AddedKey.split('.').slice(0, -1).join('.');
+  const FileName = AddedKey.split(".").slice(0, -1).join(".");
   const Bucket = eventObject.bucket.name;
   const outputBucketName = process.env.OUTPUT_BUCKET;
-  const hlsRendition = 'hls';
-  const dashRendition = 'dash';
+  const hlsRendition = "hls";
+  const dashRendition = "dash";
 
   // Set the output to have the filename (without extension) as a folder depending
   // on the type of rendition this is required as the job json for HLS differs from DASH
@@ -53,60 +55,77 @@ async function createJob(eventObject) {
 
   let jobSettings = {};
 
-  const outputTypeList = outputType.split(',');
-
+  const outputTypeList = outputType.split(",");
 
   if (outputTypeList.length === 1) {
-    if (outputTypeList[0] === 'HLS') {
+    if (outputTypeList[0] === "HLS") {
       hlsJobSettings.OutputGroups[0].OutputGroupSettings.HlsGroupSettings.Destination = `s3://${outputBucketName}/${FileName}/`;
-      hlsJobSettings.Inputs[0].FileInput = `s3://${Bucket}/${decodeURIComponent(AddedKey.replace(/\+/g, ' '))}`;
+      hlsJobSettings.Inputs[0].FileInput = `s3://${Bucket}/${decodeURIComponent(AddedKey.replace(/\+/g, " "))}`;
       jobSettings = hlsJobSettings;
-    } else if (outputTypeList[0] === 'DASH') {
+    } else if (outputTypeList[0] === "DASH") {
       dashJobSettings.OutputGroups[0].OutputGroupSettings.DashIsoGroupSettings.Destination = `s3://${outputBucketName}/${FileName}/`;
-      dashJobSettings.Inputs[0].FileInput = `s3://${Bucket}/${decodeURIComponent(AddedKey.replace(/\+/g, ' '))}`;
+      dashJobSettings.Inputs[0].FileInput = `s3://${Bucket}/${decodeURIComponent(AddedKey.replace(/\+/g, " "))}`;
       jobSettings = dashJobSettings;
+    } else if (outputTypeList[0] === "FILE") {
+      fileJobSettings.OutputGroups[0].OutputGroupSettings.FileGroupSettings.Destination = `s3://${outputBucketName}/${FileName}/`;
+      fileJobSettings.Inputs[0].FileInput = `s3://${Bucket}/${decodeURIComponent(AddedKey.replace(/\+/g, " "))}`;
+      jobSettings = fileJobSettings;
     }
   } else {
     for (let counter = 0; counter < outputTypeList.length; counter++) {
-      if (outputTypeList[counter] === 'HLS') {
+      if (outputTypeList[counter] === "HLS") {
         // iterate through the outputGroups and set the appropriate output file paths
         const outputGroupsLengths = hlsdashJobSettings.OutputGroups.length;
 
-        for (let outputGroupsLengthsCounter = 0;
-          outputGroupsLengthsCounter < outputGroupsLengths; outputGroupsLengthsCounter++) {
-          if (hlsdashJobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.Type.includes('HLS')) {
-            hlsdashJobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.HlsGroupSettings.Destination = `s3://${outputBucketName}/${FileName}/${hlsRendition}/`;
+        for (let outputGroupsLengthsCounter = 0; outputGroupsLengthsCounter < outputGroupsLengths; outputGroupsLengthsCounter++) {
+          if (hlsdashJobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.Type.includes("HLS")) {
+            hlsdashJobSettings.OutputGroups[
+              outputGroupsLengthsCounter
+            ].OutputGroupSettings.HlsGroupSettings.Destination = `s3://${outputBucketName}/${FileName}/${hlsRendition}/`;
           }
         }
       }
 
-      if (outputTypeList[counter] === 'DASH') {
+      if (outputTypeList[counter] === "DASH") {
         // iterate through the outputGroups and set the appropriate output file paths
         const outputGroupsLengths = hlsdashJobSettings.OutputGroups.length;
 
-        for (let outputGroupsLengthsCounter = 0;
-          outputGroupsLengthsCounter < outputGroupsLengths; outputGroupsLengthsCounter++) {
-          if (hlsdashJobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.Type.includes('DASH')) {
-            hlsdashJobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.DashIsoGroupSettings.Destination = `s3://${outputBucketName}/${FileName}/${dashRendition}/`;
+        for (let outputGroupsLengthsCounter = 0; outputGroupsLengthsCounter < outputGroupsLengths; outputGroupsLengthsCounter++) {
+          if (hlsdashJobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.Type.includes("DASH")) {
+            hlsdashJobSettings.OutputGroups[
+              outputGroupsLengthsCounter
+            ].OutputGroupSettings.DashIsoGroupSettings.Destination = `s3://${outputBucketName}/${FileName}/${dashRendition}/`;
+          }
+        }
+      }
+
+      if (outputTypeList[counter] === "FILE") {
+        const outputGroupsLengths = hlsThumbnailJobSettings.OutputGroups.length;
+
+        for (let outputGroupsLengthsCounter = 0; outputGroupsLengthsCounter < outputGroupsLengths; outputGroupsLengthsCounter++) {
+          if (hlsThumbnailJobSettings.OutputGroups[outputGroupsLengthsCounter].OutputGroupSettings.Type.includes("FILE")) {
+            hlsThumbnailJobSettings.OutputGroups[0].OutputGroupSettings.FileGroupSettings.Destination = `s3://${outputBucketName}/${FileName}/`;
           }
         }
       }
     }
 
-    hlsdashJobSettings.Inputs[0].FileInput = `s3://${Bucket}/${decodeURIComponent(AddedKey.replace(/\+/g, ' '))}`;
+    hlsdashJobSettings.Inputs[0].FileInput = `s3://${Bucket}/${decodeURIComponent(AddedKey.replace(/\+/g, " "))}`;
 
     jobSettings = hlsdashJobSettings;
   }
 
-
-  let queueARN = '';
+  let queueARN = "";
   if (process.env.QUEUE_ARN) {
     queueARN = process.env.QUEUE_ARN;
   } else {
-    const q = await mcClient.getQueue(queueParams, (err, data) => {
-      if (err) console.log(err, err.stack); // an error occurred
-      else console.log(data);
-    }).promise();
+    const q = await mcClient
+      .getQueue(queueParams, (err, data) => {
+        if (err) console.log(err, err.stack);
+        // an error occurred
+        else console.log(data);
+      })
+      .promise();
     queueARN = q.Queue.Arn;
   }
 
@@ -116,7 +135,7 @@ async function createJob(eventObject) {
     UserMetadata: {},
     Role: process.env.MC_ROLE,
     Settings: jobSettings,
-    Tags: { 'amplify-video': 'amplify-video' },
+    Tags: { "amplify-video": "amplify-video" },
   };
   await mcClient.createJob(jobParams).promise();
 }

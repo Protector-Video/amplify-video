@@ -1,0 +1,55 @@
+{
+  "OutputGroups": [
+    {
+      "Name": "File Group",
+      "Outputs": [
+        {
+          "ContainerSettings": {
+            "Container": "RAW"
+          },
+          "VideoDescription": {
+            "CodecSettings": {
+              "Codec": "FRAME_CAPTURE",
+              "FrameCaptureSettings": {
+                "FramerateNumerator": 30,
+                "FramerateDenominator": 90,
+                "MaxCaptures": 3,
+                "Quality": 80
+              }
+            }
+          },
+          "Extension": ".jpg",
+          "NameModifier": "poster-image"
+        }
+      ],
+      "OutputGroupSettings": {
+        "Type": "FILE_GROUP_SETTINGS",
+        "FileGroupSettings": {
+          "Destination": "s3://xxxxxxxxxxxxx/xxx"
+        }
+      }
+    }
+  ],
+  "AdAvailOffset": 0,
+  "Inputs": [
+    {
+      "AudioSelectors": {
+        "Audio Selector 1": {
+          "Offset": 0,
+          "DefaultSelection": "DEFAULT",
+          "ProgramSelection": 1
+        }
+      },
+      "VideoSelector": {
+        "ColorSpace": "FOLLOW"
+      },
+      "FilterEnable": "AUTO",
+      "PsiControl": "USE_PSI",
+      "FilterStrength": 0,
+      "DeblockFilter": "DISABLED",
+      "DenoiseFilter": "DISABLED",
+      "TimecodeSource": "ZEROBASED",
+      "FileInput": "s3key"
+    }
+  ]
+}
